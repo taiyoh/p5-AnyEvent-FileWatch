@@ -2,7 +2,9 @@ use inc::Module::Install;
 name 'AnyEvent-FileWatch';
 all_from 'lib/AnyEvent/FileWatch.pm';
 
-# requires '';
+requires 'AnyEvent';
+requires 'File::Zglob';
+requires 'AnyEvent';
 
 tests 't/*.t';
 author_tests 'xt';
