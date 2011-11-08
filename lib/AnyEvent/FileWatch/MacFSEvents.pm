@@ -10,11 +10,11 @@ sub new {
     my $class = shift;
     my $paths = shift;
 
-    Carp::croak("require path list") if !$paths || ref($paths) ne 'ARRAY';
+    croak "require path list" if !$paths || ref($paths) ne 'ARRAY';
 
     my $self = bless {
         _files  => {},
-		_callback => sub {}
+        _callback => sub {}
     }, $class;
 
     $self->_scan(Cwd::abs_path($_), 1) for @$paths;
@@ -34,7 +34,7 @@ sub _scan {
 
         my $w = AE::io $fs->watch, 0, sub {
             if (my @events = $fs->read_events) {
-				$self->_scan($_->path, 1) for @events;
+                $self->_scan($_->path, 1) for @events;
                 $self->{_callback}->(@events);
             }
         };
@@ -57,7 +57,7 @@ sub _scan {
         if ($recursive) {
             return {
                 status => $status,
-                paths  => [ map { $self->_scan($_) } File::Zglob::zglob($path.'/**/*') ]
+                paths  => [ map { $self->_scan($_) } zglob($path.'/**/*') ]
             };
         }
     }

@@ -7,11 +7,11 @@ use AnyEvent::FileWatch::Util;
 use IO::KQueue;
 
 sub new {
-	my ($class, $paths) = @_;
+    my ($class, $paths) = @_;
 
-	Carp::croak("require path list") if !$paths || ref($paths) ne 'ARRAY';
+    croak "require path list" if !$paths || ref($paths) ne 'ARRAY';
 
-	my $kq = IO::KQueue->new;
+    my $kq = IO::KQueue->new;
 
     my $self = bless {
         _files    => {},
@@ -19,23 +19,23 @@ sub new {
         _callback => sub {}
     }, $class;
 
-	$self->_scan($_, 1) for @$paths;
+    $self->_scan($_, 1) for @$paths;
 
     $self->{_watcher} = AE::io $$kq, 0, sub {
-		if (my @events = $kq->kevent) {
-			$self->_scan($_->[KQ_UDATA], 1) for @events;
-			$self->{_callback}->(@events);
-		}
+        if (my @events = $kq->kevent) {
+            $self->_scan($_->[KQ_UDATA], 1) for @events;
+            $self->{_callback}->(@events);
+        }
     };
 
-	return $self;
+    return $self;
 }
 
 sub _scan {
-	my ($self, $path, $recursive) = @_;
+    my ($self, $path, $recursive) = @_;
 
-	# from Filesys::Notify::KQueue
-	$self->{_files}{$path} ||= do {
+    # from Filesys::Notify::KQueue
+    $self->{_files}{$path} ||= do {
         open(my $fh, '<', $path) or die("Can't open '$path': $!");
         die "Can't get fileno '$path'" unless defined fileno($fh);
 
@@ -50,28 +50,28 @@ sub _scan {
         );
 
         $fh;
-	};
+    };
 
-	my $status = 'modify';
+    my $status = 'modify';
 
-	unless (-e $path) {
-		close $self->{_files}{$path};
-		delete $self->{_files}{$path};
-		$status = 'delete';
-	}
-	else {
-		if ($recursive) {
-			return {
-				status => $status,
-				paths  => [ map { $self->_scan($_) } File::Zglob::zglob($path.'/**/*') ]
-			};
-		}
-	}
+    unless (-e $path) {
+        close $self->{_files}{$path};
+        delete $self->{_files}{$path};
+        $status = 'delete';
+    }
+    else {
+        if ($recursive) {
+            return {
+                status => $status,
+                paths  => [ map { $self->_scan($_) } zglob($path.'/**/*') ]
+            };
+        }
+    }
 
-	return {
-		status => $status,
-		paths  => [ $path ]
-	};
+    return {
+        status => $status,
+        paths  => [ $path ]
+    };
 }
 
 sub wait { $_[0]->{_callback} = $_[1] }

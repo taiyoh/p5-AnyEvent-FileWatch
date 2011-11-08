@@ -10,7 +10,7 @@ sub new {
     my $class = shift;
     my $paths = shift;
 
-    Carp::croak("require path list") if !$paths || ref($paths) ne 'ARRAY';
+    croak "require path list" if !$paths || ref($paths) ne 'ARRAY';
 
     my $in = Linux::Inotify2->new;
 
@@ -40,7 +40,7 @@ sub _scan {
     };
 
     if ($recursive) {
-        map { $self->_scan($_) } File::Zglob::zglob($path.'/**/*');
+        map { $self->_scan($_) } zglob($path.'/**/*');
     }
 }
 

@@ -1,8 +1,16 @@
 package AnyEvent::FileWatch::Util;
 
+require Exporter;
+
 use Cwd ();
-use Carp ();
-use File::Zglob ();
+
+use Carp;
+use File::Zglob;
+
+our @ISA = qw/Exporter/;
+
+our @EXPORT = qw/zglob croak carp/;
+
 
 package AnyEvent::FileWatch::Event;
 
