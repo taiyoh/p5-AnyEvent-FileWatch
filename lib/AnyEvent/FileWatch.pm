@@ -1,17 +1,13 @@
 package AnyEvent::FileWatch;
 use strict;
 use warnings;
-our $VERSION = '0.00020001';
+our $VERSION = '0.0003';
 
-# from Filesys::Notify::Simple
-use constant NO_OPT => $ENV{PERL_FNS_NO_OPT};
+use constant NO_OPT => $ENV{PERL_AF_NO_OPT};
 
 use AnyEvent;
 
-sub new {
-    my $pkg = shift;
-    return _init()->new(@_);
-}
+sub new { return shift->_init()->new(@_); }
 
 # from Filesys::Notify::Simple
 sub _init {
@@ -23,7 +19,8 @@ sub _init {
     } elsif ($^O eq 'freebsd' && !NO_OPT && eval { require AnyEvent::FileWatch::KQueue; 1 }) {
         return "AnyEvent::FileWatch::KQueue";
     } else {
-        die "sorry... not implemented.";
+		require AnyEvent::FileWatch::Timer;
+        return "AnyEvent::FileWatch::Timer";
     }
 }
 
