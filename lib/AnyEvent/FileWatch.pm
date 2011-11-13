@@ -1,7 +1,7 @@
 package AnyEvent::FileWatch;
 use strict;
 use warnings;
-our $VERSION = '0.000000001';
+our $VERSION = '0.0002';
 
 # from Filesys::Notify::Simple
 use constant NO_OPT => $ENV{PERL_FNS_NO_OPT};

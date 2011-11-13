@@ -7,63 +7,55 @@ use AnyEvent::FileWatch::Util;
 use Mac::FSEvents;
 
 sub new {
-    my $class = shift;
-    my $paths = shift;
+    my ($class, $paths, $latency) = @_;
 
     croak "require path list" if !$paths || ref($paths) ne 'ARRAY';
 
     my $self = bless {
-        _files  => {},
-        _callback => sub {}
+        _sys      => {},
+        _callback => sub {},
+        _latency  => $latency || 0
     }, $class;
 
-    $self->_scan(Cwd::abs_path($_), 1) for @$paths;
+    $self->_scan(Cwd::abs_path($_)) for @$paths;
 
     return $self;
 }
 
 sub _scan {
-    my ($self, $path, $recursive) = @_;
+    my ($self, $path) = @_;
 
-    $self->{_files}{$path} ||= do {
+    $self->{_sys}{$path} ||= do {
 
         my $fs = Mac::FSEvents->new({
             path => $path,
-            latency => 0
+            latency => $self->{_latency}
         });
 
         my $w = AE::io $fs->watch, 0, sub {
-            if (my @events = $fs->read_events) {
-                $self->_scan($_->path, 1) for @events;
-                $self->{_callback}->(@events);
-            }
+            my @events = $fs->read_events or return;
+            my %uniq;
+            my @path = grep !$uniq{$_}++, map { $_->path } @events;
+            my @evs;
+            my $old_fs = $self->{_sys}{$path}{files};
+            my $new_fs = scan_files(@path);
+            compare_fs($old_fs, $new_fs, sub {
+                my ($status, $path, $stat) = @_;
+                push @evs, AnyEvent::FileWatch::Event->new({
+                    status => $status,
+                    path   => $path,
+                    stat   => $stat
+                });
+            });
+            $self->{_callback}->(@evs) if @evs;
+            $self->{_sys}{$path}{files} = $new_fs;
         };
 
         +{
             fsevents => $fs,
-            watcher  => $w
+            watcher  => $w,
+            files    => scan_files($path)
         };
-    };
-
-    my $status = 'modify';
-
-    unless (-e $path) {
-        $self->{_files}{$path}{fsevents}->stop;
-        delete $self->{_files}{$path}{watcher};
-        delete $self->{_files}{$path};
-        $status = 'delete';
-    }
-    else {
-        if ($recursive) {
-            return {
-                status => $status,
-                paths  => [ map { $self->_scan($_) } zglob($path.'/**/*') ]
-            };
-        }
-    }
-    return {
-        status => $status,
-        paths  => [ $path ]
     };
 }
 
