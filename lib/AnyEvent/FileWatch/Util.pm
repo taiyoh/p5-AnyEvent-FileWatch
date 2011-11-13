@@ -12,7 +12,7 @@ our @EXPORT = qw/croak carp scan_files compare_fs/;
 # from Filesys::Notify::Simple
 sub fw_stat {
     my $path = shift;
-    my @stat = stat $path;
+    my @stat = stat $path or return;
     return {
         path   => $path,
         mtime  => $stat[9],
